@@ -15,6 +15,7 @@ PlayMode::PlayMode(Client &client_) : client(client_) {
 }
 
 PlayMode::~PlayMode() {
+
 }
 
 bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
@@ -102,12 +103,32 @@ void PlayMode::update(float elapsed) {
 }
 
 void PlayMode::draw(glm::uvec2 const &drawable_size) {
-
+	//circle
 	static std::array< glm::vec2, 16 > const circle = [](){
 		std::array< glm::vec2, 16 > ret;
 		for (uint32_t a = 0; a < ret.size(); ++a) {
 			float ang = a / float(ret.size()) * 2.0f * float(M_PI);
 			ret[a] = glm::vec2(std::cos(ang), std::sin(ang));
+		}
+		return ret;
+	}();
+
+	//octagon
+	static std::array< glm::vec2, 8 > const octagon = [](){
+		std::array< glm::vec2, 8 > ret;
+		for (uint32_t a = 0; a < ret.size(); ++a) {
+			float ang = a / float(ret.size()) * 2.0f * float(M_PI);
+			ret[a] = glm::vec2(std::cos(ang), std::sin(ang));
+		}
+		return ret;
+	}();
+
+	//triangle angle rotation 
+	static std::array< float, 3 > const triangle = [](){
+		std::array< float, 3 > ret;
+		for (uint32_t a = 0; a < ret.size(); ++a) {
+			float ang = a / float(ret.size()) * 2.0f * float(M_PI);
+			ret[a] = ang;
 		}
 		return ret;
 	}();
@@ -166,7 +187,9 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 					glm::vec3(player.position + Game::PlayerRadius * glm::vec2( 0.5f,-0.5f), 0.0f),
 					col
 				);
+				draw_text(player.position + glm::vec2(0.0f, -0.1f + Game::PlayerRadius), "You", 0.09f);
 			}
+			
 			for (uint32_t a = 0; a < circle.size(); ++a) {
 				lines.draw(
 					glm::vec3(player.position + Game::PlayerRadius * circle[a], 0.0f),
@@ -175,8 +198,57 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 				);
 			}
 
-			draw_text(player.position + glm::vec2(0.0f, -0.1f + Game::PlayerRadius), player.name, 0.09f);
 		}
+
+		//draw a line betweem the two players:
+		if (game.players.size() == 2 && game.connected) {
+			lines.draw(
+				glm::vec3(game.players.front().position, 0.0f),
+				glm::vec3(game.players.back().position, 0.0f),
+				glm::u8vec4(0xff, 0xff, 0xff, 0xff)
+			);
+		}
+
+		//try to draw enemies 
+		for (auto const &enemy : game.enemies) {
+			glm::u8vec4 col = glm::u8vec4(enemy.color.x*255, enemy.color.y*255, enemy.color.z*255, 0xff);
+			for (uint32_t a = 0; a < octagon.size(); ++a) {
+				lines.draw(
+					glm::vec3(enemy.position + Game::EnemyRadius * octagon[a], 0.0f),
+					glm::vec3(enemy.position + Game::EnemyRadius * octagon[(a + 1) % octagon.size()], 0.0f),
+					col
+				);
+			}
+		}
+
+
+
+		//if game over
+		if (game.game_over) {
+			draw_text(glm::vec2(0.0f, 0.0f), "Game Over", 0.2f);
+			//tell them how many enemies they killed:
+			draw_text(glm::vec2(0.0f, -0.3f), "you killed " + std::to_string(game.enemy_killed) + " octagons!", 0.1f);
+		} else {
+			//draw a rotating triangle at the center
+			float t = game.time * 0.5f;
+			float r = game.GoalRadius;
+			glm::u8vec4 col = glm::u8vec4(0xff, 0xff, 0xff, 0xff);
+			for (uint32_t a = 0; a < 3; ++a) {
+				lines.draw(
+					glm::vec3(r * glm::cos(t + triangle[a]), r * glm::sin(t + triangle[a]), 0.0f),
+					glm::vec3(r * glm::cos(t + triangle[(a + 1) % 3]), r * glm::sin(t + triangle[(a + 1) % 3]), 0.0f),
+					col
+				);
+				lines.draw(
+					glm::vec3(r * glm::cos(triangle[a] - t), r * glm::sin(triangle[a] - t), 0.0f),
+					glm::vec3(r * glm::cos(triangle[(a + 1) % 3] - t), r * glm::sin(triangle[(a + 1) % 3] - t), 0.0f),
+					col
+				);
+			}
+		}
+		
 	}
+
+
 	GL_ERRORS();
 }

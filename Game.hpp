@@ -46,13 +46,39 @@ struct Player {
 	std::string name = "";
 };
 
+struct Enemy {
+	glm::vec2 position = glm::vec2(0.0f, 0.0f);
+	glm::vec2 velocity = glm::vec2(0.0f, 0.0f);
+
+	glm::vec3 color = glm::vec3(1.0f, 1.0f, 1.0f);
+};
+
 struct Game {
 	std::list< Player > players; //(using list so they can have stable addresses)
+	std::list < Enemy > enemies;
+	glm::vec2 alter = glm::vec2(0.0f, 0.0f);
 	Player *spawn_player(); //add player the end of the players list (may also, e.g., play some spawn anim)
+	Enemy *spawn_enemy(); //add enemy to the end of the enemies list
 	void remove_player(Player *); //remove player from game (may also, e.g., play some despawn anim)
+	void remove_enemy(Enemy *);
 
 	std::mt19937 mt; //used for spawning players
 	uint32_t next_player_number = 1; //used for naming players
+	uint32_t next_enemy_number = 1; //used for naming enemies
+
+	//time 
+	float time = 0.0f;
+
+	//total enemy count
+	uint32_t enemy_max = 3;
+	//enemy killed 
+	uint32_t enemy_killed = 0;
+
+	//connected or not 
+	bool connected = false;
+
+	//over or not
+	bool game_over = false;
 
 	Game();
 
@@ -72,7 +98,14 @@ struct Game {
 	inline static constexpr float PlayerSpeed = 2.0f;
 	inline static constexpr float PlayerAccelHalflife = 0.25f;
 	
+	//enemy constants:
+	inline static constexpr float EnemyRadius = 0.04f;
+	inline static constexpr float EnemyAccel = 0.2f;
+	inline static constexpr float EnemySpeed = 1.0f;
+	inline static constexpr float EnemyAccelHalflife = 0.25f;
 
+	//goal radius
+	inline static constexpr float GoalRadius = 0.1f;
 	//---- communication helpers ----
 
 	//used by client:
